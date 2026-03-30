@@ -1,3 +1,4 @@
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 
@@ -25,10 +26,27 @@ export default function Navbar() {
           </nav>
 
           {/* CTA & Mobile toggle */}
-          <div className="flex items-center gap-4">
-            <button className="hidden md:flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow active:scale-95">
-              Request Quote
-            </button>
+          <div className="flex items-center gap-3">
+            <Show when="signed-out">
+              <SignInButton>
+                <button className="flex items-center justify-center border border-border hover:border-primary/30 hover:bg-muted text-heading px-3 sm:px-4 py-2.5 rounded-lg font-medium text-sm transition-all">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton>
+                <button className="flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-3 sm:px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow active:scale-95">
+                  Sign Up
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex items-center gap-3">
+                <button className="hidden md:flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow active:scale-95">
+                  Request Quote
+                </button>
+                <UserButton />
+              </div>
+            </Show>
             <button className="md:hidden p-2 text-foreground hover:bg-muted rounded-md transition-colors">
               <Menu className="w-6 h-6" />
             </button>

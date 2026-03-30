@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import { Wrench, ShieldCheck, Package, ArrowRight, CheckCircle2, Truck, Settings, Search, ShoppingCart } from "lucide-react";
 
@@ -6,7 +7,9 @@ import Navbar from "./components/Navbar";
 import CTA from "./components/CTA";
 import Footer from "./components/Footer";
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+
   return (
     <>
       <TrustBar />
@@ -27,6 +30,9 @@ export default function Home() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
                   Trusted Tier-1 Supplier
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/15 text-xs font-semibold text-primary mb-5">
+                  {userId ? "Signed in with Clerk" : "Create your first Clerk user from the nav"}
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-heading leading-[1.15] mb-6">
                   Precision Automobile <br />
