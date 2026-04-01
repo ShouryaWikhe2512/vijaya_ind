@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { InvoiceDocument } from "@/models/Invoice";
 
 type BuyerInfo = {
@@ -10,97 +10,109 @@ type BuyerInfo = {
   gstin?: string;
 };
 
-function escapePdfText(value: string) {
-  return value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
+function toSafeNumber(value: unknown, fallback = 0) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toSafeText(value: unknown, fallback = "-") {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-IN", {
+  const amount = toSafeNumber(value, 0);
+  const formatted = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     minimumFractionDigits: 2,
-  }).format(value);
+  }).format(amount);
+
+  // Built-in PDFKit fonts (e.g., Helvetica) do not reliably support the rupee symbol.
+  // Replace it with ASCII-safe text to avoid "cannot encode" runtime failures.
+  return formatted.replace(/\u20B9/g, "INR ");
 }
 
-function buildPdfBuffer(lines: string[]) {
-  const pageHeight = 842;
-  const startY = 800;
-  const lineHeight = 18;
+export function generateInvoicePdf(invoice: InvoiceDocument, buyer: BuyerInfo): Promise<Buffer> {
+  return (async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const safeItems = Array.isArray(invoice.items) ? invoice.items : [];
+    const safeGst = {
+      cgst: toSafeNumber(invoice.gstBreakup?.cgst, 0),
+      sgst: toSafeNumber(invoice.gstBreakup?.sgst, 0),
+      igst: toSafeNumber(invoice.gstBreakup?.igst, 0),
+    };
+    const parsedDate = invoice.createdAt ? new Date(invoice.createdAt) : new Date();
+    const safeDate = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+    const draw = (text: string, x: number, y: number, size = 10, bold = false) => {
+      page.drawText(text, {
+        x,
+        y,
+        size,
+        font: bold ? boldFont : font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
+    };
 
-  const contentLines = [
-    "BT",
-    "/F1 12 Tf",
-    `1 0 0 1 40 ${startY} Tm`,
-  ];
+    draw("VIJAYA INDUSTRIES", 200, 800, 18, true);
+    draw("GST No. 27AQXPC1055E1ZW", 215, 784, 10);
+    draw("TAX INVOICE", 245, 760, 14, true);
 
-  lines.forEach((line, index) => {
-    if (index === 0) {
-      contentLines.push(`(${escapePdfText(line)}) Tj`);
-      return;
+    draw("Invoice Details:", 50, 728, 10, true);
+    draw(`Invoice No: ${toSafeText(invoice.invoiceNumber, "N/A")}`, 50, 712);
+    draw(`Date: ${safeDate.toLocaleDateString("en-IN")}`, 50, 698);
+    draw(`Order ID: ${toSafeText(invoice.orderId, "-")}`, 50, 684);
+
+    draw("Billed To:", 330, 728, 10, true);
+    draw(`${toSafeText(buyer.companyName, toSafeText(buyer.name, "Buyer"))}`, 330, 712);
+    draw(`${toSafeText(buyer.address, "-")}`, 330, 698);
+    draw(`GSTIN: ${toSafeText(buyer.gstin, "Unregistered")}`, 330, 684);
+    draw(`Email: ${toSafeText(buyer.email, "-")}`, 330, 670);
+
+    page.drawLine({ start: { x: 50, y: 648 }, end: { x: 545, y: 648 }, thickness: 1 });
+    draw("S.No", 50, 634, 10, true);
+    draw("Description (SKU)", 95, 634, 10, true);
+    draw("Qty", 360, 634, 10, true);
+    draw("Unit Price", 410, 634, 10, true);
+    draw("Total", 500, 634, 10, true);
+    page.drawLine({ start: { x: 50, y: 626 }, end: { x: 545, y: 626 }, thickness: 1 });
+
+    let rowY = 610;
+    safeItems.slice(0, 18).forEach((item, index) => {
+      const quantity = toSafeNumber(item.quantity, 0);
+      const price = toSafeNumber(item.price, 0);
+      const lineTotal = toSafeNumber(item.lineTotal, 0);
+      draw(`${index + 1}`, 50, rowY);
+      draw(`${toSafeText(item.name, "Item")} (${toSafeText(item.sku, "-")})`, 95, rowY);
+      draw(`${quantity}`, 360, rowY);
+      draw(`${formatCurrency(price)}`, 410, rowY);
+      draw(`${formatCurrency(lineTotal)}`, 500, rowY);
+      rowY -= 18;
+    });
+
+    page.drawLine({ start: { x: 50, y: rowY - 6 }, end: { x: 545, y: rowY - 6 }, thickness: 1 });
+
+    const taxY = rowY - 28;
+    if (safeGst.cgst > 0) {
+      draw(`CGST: ${formatCurrency(safeGst.cgst)}`, 390, taxY);
+      draw(`SGST: ${formatCurrency(safeGst.sgst)}`, 390, taxY - 16);
+    } else {
+      draw(`IGST: ${formatCurrency(safeGst.igst)}`, 390, taxY);
     }
+    draw(`Grand Total: ${formatCurrency(toSafeNumber(invoice.totalAmount, 0))}`, 350, taxY - 36, 12, true);
 
-    contentLines.push(`0 -${lineHeight} Td`);
-    contentLines.push(`(${escapePdfText(line)}) Tj`);
-  });
+    draw("Thank you for your business!", 220, 100, 10);
+    draw("Authorized Signatory: ___________________", 340, 70, 10);
 
-  contentLines.push("ET");
-  const contentStream = contentLines.join("\n");
-
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 ${pageHeight}] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>`,
-    `<< /Length ${Buffer.byteLength(contentStream, "utf8")} >>\nstream\n${contentStream}\nendstream`,
-  ];
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-
-  objects.forEach((object, index) => {
-    offsets.push(Buffer.byteLength(pdf, "utf8"));
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-
-  const xrefStart = Buffer.byteLength(pdf, "utf8");
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-
-  for (let index = 1; index < offsets.length; index += 1) {
-    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  return Buffer.from(pdf, "utf8");
+    const bytes = await pdfDoc.save();
+    return Buffer.from(bytes);
+  })();
 }
 
-export async function renderInvoicePdf(invoice: InvoiceDocument, buyer: BuyerInfo) {
-  const lines = [
-    "VIJAYA INDUSTRIES",
-    "GST No. 27AQXPC1055E1ZW",
-    "GST Invoice",
-    "",
-    `Invoice Number: ${invoice.invoiceNumber}`,
-    `Order ID: ${invoice.orderId || "-"}`,
-    `Date: ${new Date(invoice.createdAt).toLocaleDateString("en-IN")}`,
-    "",
-    `Buyer: ${buyer.companyName || buyer.name}`,
-    `Email: ${buyer.email || "-"}`,
-    `Address: ${buyer.address || "-"}`,
-    `GSTIN: ${buyer.gstin || "-"}`,
-    "",
-    "Items:",
-    ...invoice.items.map(
-      (item, index) =>
-        `${index + 1}. ${item.name} (${item.sku}) x${item.quantity} @ ${formatCurrency(item.price)} = ${formatCurrency(item.lineTotal)}`,
-    ),
-    "",
-    `CGST: ${formatCurrency(invoice.gstBreakup.cgst)}`,
-    `SGST: ${formatCurrency(invoice.gstBreakup.sgst)}`,
-    `IGST: ${formatCurrency(invoice.gstBreakup.igst)}`,
-    `Total Amount: ${formatCurrency(invoice.totalAmount)}`,
-  ];
-
-  return buildPdfBuffer(lines);
+export function generateFallbackInvoicePdf(invoice: InvoiceDocument, buyer: BuyerInfo): Promise<Buffer> {
+  return generateInvoicePdf(invoice, buyer);
 }
 
 export async function sendInvoiceEmail(params: {

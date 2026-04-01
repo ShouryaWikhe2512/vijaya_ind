@@ -2,8 +2,10 @@
 
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 
 import AuthControls from "@/app/components/AuthControls";
+import { useCart } from "@/app/components/CartContext";
 
 export default function Navbar() {
   return (
@@ -30,6 +32,11 @@ export default function Navbar() {
 
           {/* CTA & Mobile toggle */}
           <div className="flex items-center gap-4">
+            <Link href="/cart" className="relative p-2 text-foreground hover:bg-muted rounded-full transition-colors flex items-center justify-center">
+              <ShoppingCart className="w-5 h-5 text-gray-700" />
+              <CartBadge />
+            </Link>
+            
             <button className="hidden xl:flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow active:scale-95">
               Request Quote
             </button>
@@ -41,5 +48,17 @@ export default function Navbar() {
         </div>
       </div>
     </header>
+  );
+}
+
+function CartBadge() {
+  const { cart } = useCart();
+  const sum = cart.reduce((acc, item) => acc + item.quantity, 0);
+  if (sum === 0) return null;
+  
+  return (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+      {cart.length}
+    </span>
   );
 }
