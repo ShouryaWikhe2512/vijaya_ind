@@ -304,7 +304,7 @@ export default function ProductsAdminClient() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name, SKU, brand, model, or category"
+            placeholder="Search by name, HSN, brand, model, or category"
             className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none ring-primary/20 focus:ring-4 md:max-w-md"
           />
           <p className="text-sm text-foreground">
@@ -413,7 +413,7 @@ export default function ProductsAdminClient() {
         <form onSubmit={submitProduct} className="grid gap-4">
           {[
             ["name", "Product Name"],
-            ["sku", "SKU"],
+            ["sku", "HSN"],
             ["brand", "Brand"],
             ["model", "Model"],
             ["price", "Selling Price"],

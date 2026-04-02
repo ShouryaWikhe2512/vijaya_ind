@@ -471,7 +471,7 @@ export async function renderInvoicePdf(
     const thY = curY + 7;
     text("#",           cols.no.x + 4,    thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.no.w,    align: "center" });
     text("Description", cols.name.x + 4,  thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.name.w });
-    text("SKU / Code",  cols.sku.x,        thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.sku.w });
+    text("HSN / Code",  cols.sku.x,        thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.sku.w });
     text("Qty",         cols.qty.x,        thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.qty.w,   align: "center" });
     text("Unit Price",  cols.price.x,      thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.price.w, align: "right" });
     text("Amount",      cols.total.x,      thY, { font: FONT_NAMES.bold, size: 8, color: WHITE, width: cols.total.w, align: "right" });
