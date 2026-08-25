@@ -4,10 +4,12 @@ import TrustBar from "../components/TrustBar";
 import Navbar from "../components/Navbar";
 import CTA from "../components/CTA";
 import Footer from "../components/Footer";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "About Us | Vijaya Industries",
+export const metadata: Metadata = {
+  title: "About Our Automobile Clip Manufacturing",
   description: "Learn about Vijaya Industries, a trusted manufacturer of precision automobile clips and fastening solutions in India.",
+  alternates: { canonical: "/about" },
 };
 
 export default function About() {

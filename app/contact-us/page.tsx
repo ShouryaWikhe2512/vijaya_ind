@@ -4,10 +4,12 @@ import TrustBar from "../components/TrustBar";
 import Navbar from "../components/Navbar";
 import CTA from "../components/CTA";
 import Footer from "../components/Footer";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Contact Us | Vijaya Industries",
+export const metadata: Metadata = {
+  title: "Contact Us for Bulk Automobile Clips",
   description: "Reach out to Vijaya Industries for bulk orders, quotations, and product inquiries regarding precision automobile clips.",
+  alternates: { canonical: "/contact-us" },
 };
 
 export default function ContactUs() {
