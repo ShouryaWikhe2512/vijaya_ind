@@ -8,8 +8,10 @@ import { connectToDatabase } from "@/lib/db";
 import { ProductModel } from "@/models/Product";
 
 export const metadata: Metadata = {
-  title: "Product Catalogue | Vijaya Industries",
-  description: "Explore our complete range of automobile clips and fastening solutions. Reliable inventory ready for distributors and assembly lines.",
+  title: "Automobile Clip Product Catalogue",
+  description:
+    "Browse Vijaya Industries' catalogue of bumper clips, fender lining clips, trim clips, and automotive fastening solutions for bulk buyers across India.",
+  alternates: { canonical: "/products" },
 };
 
 export default async function ProductsPage() {
