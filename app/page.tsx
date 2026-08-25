@@ -16,6 +16,11 @@ import Navbar from "./components/Navbar";
 import CTA from "./components/CTA";
 import Footer from "./components/Footer";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (

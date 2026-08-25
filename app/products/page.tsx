@@ -8,8 +8,10 @@ import { connectToDatabase } from "@/lib/db";
 import { ProductModel } from "@/models/Product";
 
 export const metadata: Metadata = {
-  title: "Product Catalogue | Vijaya Industries",
-  description: "Explore our complete range of automobile clips and fastening solutions. Reliable inventory ready for distributors and assembly lines.",
+  title: "Automobile Clip Product Catalogue",
+  description:
+    "Browse Vijaya Industries' catalogue of bumper clips, fender lining clips, trim clips, and automotive fastening solutions for bulk buyers across India.",
+  alternates: { canonical: "/products" },
 };
 
 export default async function ProductsPage() {
@@ -20,21 +22,28 @@ export default async function ProductsPage() {
     .sort({ createdAt: -1 })
     .lean();
 
-  const catalogueProducts = products.map((product) => ({
-    id: String(product._id),
-    name: product.name,
-    brand: product.brand,
-    category:
-      typeof product.category === "object" && product.category && "name" in product.category
+  const catalogueProducts = products.map((product) => {
+    const categoryName =
+      typeof product.category === "object" &&
+      product.category &&
+      "name" in product.category &&
+      typeof product.category.name === "string"
         ? product.category.name
-        : "Uncategorized",
-    price: product.price,
-    imageUrl: product.images[0] ?? null,
-    moq: product.moq,
-    stock: product.stock,
-    description: product.description,
-    model: product.model,
-  }));
+        : "Uncategorized";
+
+    return {
+      id: String(product._id),
+      name: product.name,
+      brand: product.brand,
+      category: categoryName,
+      price: product.price,
+      imageUrl: product.images[0] ?? null,
+      moq: product.moq,
+      stock: product.stock,
+      description: product.description,
+      model: product.model,
+    };
+  });
 
   return (
     <>
