@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -25,19 +26,28 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}): Promise<Metadata> {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) return { title: "Product Not Found" };
 
   await connectToDatabase();
-  const product = await ProductModel.findById(id)
+  const product = await ProductModel.findOne({ _id: id, isActive: true })
     .populate("category", "name")
     .lean();
   if (!product) return { title: "Product Not Found" };
 
   return {
-    title: `${product.name} | Vijaya Industries Catalogue`,
+    title: product.name,
     description: product.description,
+    alternates: { canonical: `/products/${id}` },
+    openGraph: {
+      type: "website",
+      title: `${product.name} | Vijaya Industries`,
+      description: product.description,
+      images: product.images?.[0]
+        ? [{ url: product.images[0], alt: product.name }]
+        : undefined,
+    },
   };
 }
 
@@ -51,7 +61,7 @@ export default async function ProductDetail({
   if (!Types.ObjectId.isValid(id)) return notFound();
 
   await connectToDatabase();
-  const raw = await ProductModel.findById(id)
+  const raw = await ProductModel.findOne({ _id: id, isActive: true })
     .populate("category", "name")
     .lean();
 
@@ -99,8 +109,54 @@ export default async function ProductDetail({
     imageUrl: p.images?.[0] ?? null,
   }));
 
+  const productUrl = `https://www.vijayaindustries.in/products/${product.id}`;
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    sku: product.sku,
+    brand: {
+      "@type": "Brand",
+      name: product.brand || "Vijaya Industries",
+    },
+    ...(product.imageUrl ? { image: [product.imageUrl] } : {}),
+    offers: {
+      "@type": "Offer",
+      url: productUrl,
+      priceCurrency: "INR",
+      price: product.price.toFixed(2),
+      availability:
+        product.stock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "Vijaya Industries",
+      },
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vijayaindustries.in" },
+      { "@type": "ListItem", position: 2, name: "Products", item: "https://www.vijayaindustries.in/products" },
+      { "@type": "ListItem", position: 3, name: product.name, item: productUrl },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <TrustBar />
       <Navbar />
 

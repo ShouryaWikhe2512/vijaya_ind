@@ -3,8 +3,46 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Vijaya Industries | Precision Automobile Clips",
-  description: "High-quality, durable fastening solutions trusted by workshops and distributors across India.",
+  metadataBase: new URL("https://www.vijayaindustries.in"),
+  title: {
+    default: "Vijaya Industries | Automobile Clip Manufacturer in India",
+    template: "%s | Vijaya Industries",
+  },
+  description:
+    "Vijaya Industries manufactures durable automobile clips and fastening solutions for workshops, distributors, and bulk buyers across India.",
+  applicationName: "Vijaya Industries",
+  keywords: [
+    "automobile clips manufacturer India",
+    "automotive plastic clips",
+    "bumper clips",
+    "fender lining clips",
+    "car trim clips wholesale",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: "Vijaya Industries",
+    title: "Vijaya Industries | Automobile Clip Manufacturer in India",
+    description:
+      "Precision automobile clips and fastening solutions for workshops, distributors, and bulk buyers across India.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vijaya Industries | Automobile Clip Manufacturer in India",
+    description:
+      "Precision automobile clips and fastening solutions for workshops, distributors, and bulk buyers across India.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({
